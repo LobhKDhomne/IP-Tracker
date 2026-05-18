@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IP Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #1a1d24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #6b7080;
+    --accent: #00e5a0;
+    --accent-dim: rgba(0,229,160,0.12);
+    --accent-border: rgba(0,229,160,0.3);
+    --warn: #ffb547;
+    --warn-dim: rgba(255,181,71,0.1);
+    --danger: #ff5f5f;
+    --danger-dim: rgba(255,95,95,0.1);
+    --info: #4d9ef7;
+    --info-dim: rgba(77,158,247,0.1);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 2.5rem;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active { background: var(--surface2); color: var(--accent); border: 1px solid var(--accent-border); }
+
+  /* Panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Input row */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+  .input-wrap {
+    position: relative;
+    flex: 1;
+  }
+  .input-icon {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 16px;
+    pointer-events: none;
+  }
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 12px 10px 36px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--accent-border);
+    background: var(--surface2);
+  }
+  textarea {
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 100px;
+  }
+  ::placeholder { color: var(--muted); }
+
+  .btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { background: var(--surface2); }
+
+  /* Stat cards */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    word-break: break-all;
+  }
+
+  /* Detail cards */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .detail-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .detail-value {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.04em;
+  }
+  .badge-green { background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid var(--accent-border); }
+  .badge-red { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,95,95,0.3); }
+  .badge-warn { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(255,181,71,0.3); }
+  .badge-info { background: var(--info-dim); color: var(--info); border: 1px solid rgba(77,158,247,0.3); }
+  .badge-muted { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Security row */
+  .security-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .sec-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-icon {
+    font-size: 20px;
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sec-icon.clean { background: rgba(0,229,160,0.1); color: var(--accent); }
+  .sec-icon.flagged { background: var(--danger-dim); color: var(--danger); }
+  .sec-icon.warn { background: var(--warn-dim); color: var(--warn); }
+  .sec-label { font-size: 12px; color: var(--muted); }
+  .sec-value { font-size: 13px; font-weight: 500; }
+
+  /* Map */
+  #map-wrap {
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    height: 240px;
+    margin-bottom: 1rem;
+    background: var(--surface);
+  }
+  #map-frame { width: 100%; height: 100%; border: none; filter: invert(0.9) hue-rotate(175deg) saturate(0.7); }
+
+  /* Action bar */
+  .action-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Error / Loading */
+  .error-box {
+    background: var(--danger-dim);
+    border: 1px solid rgba(255,95,95,0.3);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--danger);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .loading-box {
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* History */
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .history-item:hover { border-color: var(--border2); background: var(--surface2); }
+  .history-ip { font-family: var(--mono); font-size: 13px; font-weight: 500; flex: 1; }
+  .history-meta { font-size: 12px; color: var(--muted); flex: 2; }
+  .history-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .history-del {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 16px; padding: 2px 4px;
+    border-radius: 4px; transition: color 0.15s, background 0.15s;
+    display: flex; align-items: center;
+  }
+  .history-del:hover { color: var(--danger); background: var(--danger-dim); }
+  .history-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 2rem 0; }
+
+  /* Bulk */
+  .bulk-results { display: flex; flex-direction: column; gap: 6px; margin-top: 1rem; }
+  .bulk-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: 130px 1fr 1fr auto;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .bulk-row .ip { font-family: var(--mono); font-weight: 500; }
+  .bulk-row .loc { color: var(--text); }
+  .bulk-row .isp-col { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bulk-header {
+    padding: 4px 14px;
+    display: grid;
+    grid-template-columns: 130px 1fr 1fr auto;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.3s;
+  }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  svg { display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+      <h1>IP Tracker</h1>
+    </div>
+    <div class="subtitle">Geolocation · Bulk Lookup · VPN &amp; Proxy Detection · History</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('single')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Single Lookup
+    </button>
+    <button class="tab" onclick="switchTab('bulk')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Bulk Lookup
+    </button>
+    <button class="tab" onclick="switchTab('history')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      History
+      <span id="history-count" style="background:var(--accent-dim); color:var(--accent); border-radius:99px; padding:1px 7px; font-size:11px; font-weight:600;">0</span>
+    </button>
+  </div>
+
+  <!-- Single Lookup -->
+  <div class="panel active" id="panel-single">
+    <div class="input-row">
+      <div class="input-wrap">
+        <span class="input-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="ip-input" placeholder="Enter IPv4 or IPv6 address, or leave blank for your own IP" />
+      </div>
+      <button class="btn" id="track-btn" onclick="trackSingle()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Track
+      </button>
+    </div>
+
+    <div id="single-error" style="display:none;" class="error-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="single-error-msg"></span>
+    </div>
+
+    <div id="single-loading" style="display:none;" class="loading-box">
+      <div class="spinner"></div>
+      Looking up IP address…
+    </div>
+
+    <div id="single-result" style="display:none;">
+      <!-- IP + security badges -->
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem; flex-wrap:wrap;">
+        <span id="r-ip" style="font-family:var(--mono); font-size:18px; font-weight:500;"></span>
+        <span id="badge-version" class="badge badge-info"></span>
+        <span id="badge-vpn" class="badge" style="display:none;"></span>
+        <span id="badge-proxy" class="badge" style="display:none;"></span>
+        <span id="badge-tor" class="badge" style="display:none;"></span>
+        <span id="badge-mobile" class="badge" style="display:none;"></span>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            Country
+          </div>
+          <div class="stat-value" id="r-country">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            City
+          </div>
+          <div class="stat-value" id="r-city">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Region
+          </div>
+          <div class="stat-value" id="r-region">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Timezone
+          </div>
+          <div class="stat-value" id="r-tz">—</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-label">ISP / Organization</div>
+          <div class="detail-value" id="r-isp">—</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">ASN</div>
+          <div class="detail-value" style="font-family:var(--mono);" id="r-asn">—</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Coordinates</div>
+          <div class="detail-value" style="font-family:var(--mono);" id="r-coords">—</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Postal Code</div>
+          <div class="detail-value" id="r-postal">—</div>
+        </div>
+      </div>
+
+      <!-- Security section -->
+      <hr class="divider" />
+      <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:10px;">Security Analysis</div>
+      <div class="security-row">
+        <div class="sec-card">
+          <div class="sec-icon" id="sec-vpn-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <div class="sec-label">VPN</div>
+            <div class="sec-value" id="sec-vpn-val">Checking…</div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-icon" id="sec-proxy-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div>
+            <div class="sec-label">Proxy</div>
+            <div class="sec-value" id="sec-proxy-val">Checking…</div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-icon" id="sec-tor-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>
+          </div>
+          <div>
+            <div class="sec-label">Tor Exit Node</div>
+            <div class="sec-value" id="sec-tor-val">Checking…</div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-icon" id="sec-mobile-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <div>
+            <div class="sec-label">Mobile / Hosting</div>
+            <div class="sec-value" id="sec-mobile-val">Checking…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div id="map-wrap">
+        <iframe id="map-frame" src="" title="IP location on map"></iframe>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-bar">
+        <button class="btn btn-ghost" onclick="copyJSON()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy JSON
+        </button>
+        <button class="btn btn-ghost" onclick="copyText()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Copy Text
+        </button>
+        <button class="btn btn-ghost" onclick="clearSingle()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Lookup -->
+  <div class="panel" id="panel-bulk">
+    <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">Enter one IP address per line (max 20 at a time).</p>
+    <div class="input-wrap" style="margin-bottom:10px;">
+      <textarea id="bulk-input" placeholder="8.8.8.8&#10;1.1.1.1&#10;208.67.222.222"></textarea>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap;">
+      <button class="btn" id="bulk-btn" onclick="runBulk()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        Lookup All
+      </button>
+      <button class="btn btn-ghost" id="bulk-export-btn" onclick="exportCSV()" style="display:none;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+    </div>
+    <div id="bulk-progress" style="display:none;">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:6px;" id="bulk-progress-label">Processing 0 / 0…</div>
+      <div class="progress-wrap"><div class="progress-bar" id="bulk-progress-bar" style="width:0%;"></div></div>
+    </div>
+    <div id="bulk-error" style="display:none;" class="error-box">
+      <span id="bulk-error-msg"></span>
+    </div>
+    <div id="bulk-results-area" style="display:none;">
+      <div class="bulk-header">
+        <div>IP Address</div><div>Location</div><div>ISP</div><div>Flags</div>
+      </div>
+      <div class="bulk-results" id="bulk-list"></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="panel" id="panel-history">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+      <span style="font-size:13px; color:var(--muted);">Click any entry to view it again.</span>
+      <button class="btn btn-ghost" onclick="clearHistory()" style="font-size:12px; padding:6px 12px;">Clear All</button>
+    </div>
+    <div id="history-list-wrap"></div>
+  </div>
+
+</div>
+
+<script>
+let lastData = null;
+let history = JSON.parse(localStorage.getItem('ip-tracker-history') || '[]');
+let bulkData = [];
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-' + t).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (t === 'history') renderHistory();
+}
+
+document.getElementById('ip-input').addEventListener('keydown', e => { if (e.key === 'Enter') trackSingle(); });
+
+async function fetchIP(ip) {
+  const url = ip ? `https://ipapi.co/${encodeURIComponent(ip)}/json/` : `https://ipapi.co/json/`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.error) throw new Error(data.reason || 'Invalid or unreachable IP.');
+  return data;
+}
+
+async function trackSingle() {
+  const input = document.getElementById('ip-input').value.trim();
+  const errEl = document.getElementById('single-error');
+  const resultEl = document.getElementById('single-result');
+  const loadEl = document.getElementById('single-loading');
+  const btn = document.getElementById('track-btn');
+
+  errEl.style.display = 'none';
+  resultEl.style.display = 'none';
+  loadEl.style.display = 'block';
+  btn.disabled = true;
+
+  try {
+    const data = await fetchIP(input);
+    lastData = data;
+    populateSingle(data);
+    saveHistory(data);
+    loadEl.style.display = 'none';
+    resultEl.style.display = 'block';
+  } catch(e) {
+    loadEl.style.display = 'none';
+    document.getElementById('single-error-msg').textContent = e.message;
+    errEl.style.display = 'flex';
+  }
+  btn.disabled = false;
+}
+
+function populateSingle(d) {
+  document.getElementById('r-ip').textContent = d.ip || '—';
+  document.getElementById('r-country').textContent = (d.country_name || '—') + (d.country_code ? ` (${d.country_code})` : '');
+  document.getElementById('r-city').textContent = d.city || '—';
+  document.getElementById('r-region').textContent = d.region || '—';
+  document.getElementById('r-tz').textContent = d.timezone || '—';
+  document.getElementById('r-isp').textContent = d.org || '—';
+  document.getElementById('r-asn').textContent = d.asn || '—';
+  const lat = d.latitude != null ? parseFloat(d.latitude).toFixed(4) : null;
+  const lon = d.longitude != null ? parseFloat(d.longitude).toFixed(4) : null;
+  document.getElementById('r-coords').textContent = (lat && lon) ? `${lat}, ${lon}` : '—';
+  document.getElementById('r-postal').textContent = d.postal || '—';
+
+  // Version badge
+  const ver = d.version || (d.ip && d.ip.includes(':') ? 'IPv6' : 'IPv4');
+  document.getElementById('badge-version').textContent = ver;
+
+  // Security analysis from ipapi fields
+  const isVPN = !!(d.org && /vpn|virtual private|nord|express|private internet|surfshark|proton/i.test(d.org));
+  const isProxy = !!(d.org && /proxy|datacenter|hosting|cloud|amazon|google|microsoft|digitalocean|linode|vultr|ovh|hetzner/i.test(d.org));
+  const isMobile = !!(d.org && /mobile|cellular|telecom|wireless|gsm/i.test(d.org));
+  const isTor = false; // ipapi.co doesn't provide this; placeholder
+
+  setSecCard('sec-vpn', isVPN, 'VPN Detected', 'Not Detected');
+  setSecCard('sec-proxy', isProxy, 'Likely Datacenter/Proxy', 'Residential');
+  setSecCard('sec-tor', isTor, 'Tor Exit Node', 'Not Tor');
+  setSecCard('sec-mobile', isMobile, 'Mobile / Cellular', 'Broadband');
+
+  // Top badges
+  setBadge('badge-vpn', isVPN, 'VPN', 'badge-warn');
+  setBadge('badge-proxy', isProxy, 'Datacenter/Proxy', 'badge-warn');
+  setBadge('badge-tor', isTor, 'Tor', 'badge-red');
+  setBadge('badge-mobile', isMobile, 'Mobile', 'badge-info');
+
+  // Map
+  if (lat && lon) {
+    const fLat = parseFloat(lat), fLon = parseFloat(lon);
+    document.getElementById('map-frame').src =
+      `https://www.openstreetmap.org/export/embed.html?bbox=${fLon-0.5},${fLat-0.5},${fLon+0.5},${fLat+0.5}&layer=mapnik&marker=${fLat},${fLon}`;
+  }
+}
+
+function setSecCard(id, flagged, flaggedLabel, cleanLabel) {
+  const icon = document.getElementById(id + '-icon');
+  const val = document.getElementById(id + '-val');
+  icon.className = 'sec-icon ' + (flagged ? 'flagged' : 'clean');
+  val.textContent = flagged ? flaggedLabel : cleanLabel;
+}
+
+function setBadge(id, show, label, cls) {
+  const el = document.getElementById(id);
+  el.style.display = show ? 'inline-flex' : 'none';
+  el.className = 'badge ' + cls;
+  el.textContent = label;
+}
+
+function clearSingle() {
+  document.getElementById('single-result').style.display = 'none';
+  document.getElementById('single-error').style.display = 'none';
+  document.getElementById('ip-input').value = '';
+  lastData = null;
+}
+
+function copyJSON() {
+  if (!lastData) return;
+  navigator.clipboard.writeText(JSON.stringify(lastData, null, 2));
+  flashBtn('Copied!');
+}
+function copyText() {
+  if (!lastData) return;
+  const d = lastData;
+  const txt = [
+    `IP: ${d.ip}`,
+    `Version: ${d.version || (d.ip.includes(':') ? 'IPv6' : 'IPv4')}`,
+    `Country: ${d.country_name} (${d.country_code})`,
+    `Region: ${d.region}`,
+    `City: ${d.city}`,
+    `Postal: ${d.postal}`,
+    `Timezone: ${d.timezone}`,
+    `ISP/Org: ${d.org}`,
+    `ASN: ${d.asn}`,
+    `Coordinates: ${d.latitude}, ${d.longitude}`,
+  ].join('\n');
+  navigator.clipboard.writeText(txt);
+}
+function flashBtn(msg) {}
+
+// Bulk
+async function runBulk() {
+  const raw = document.getElementById('bulk-input').value.trim();
+  const btn = document.getElementById('bulk-btn');
+  const errEl = document.getElementById('bulk-error');
+  errEl.style.display = 'none';
+
+  if (!raw) {
+    document.getElementById('bulk-error-msg').textContent = 'Please enter at least one IP address.';
+    errEl.style.display = 'flex';
+    return;
+  }
+
+  const ips = [...new Set(raw.split('\n').map(l => l.trim()).filter(Boolean))].slice(0, 20);
+  if (!ips.length) return;
+
+  btn.disabled = true;
+  bulkData = [];
+  document.getElementById('bulk-results-area').style.display = 'none';
+  document.getElementById('bulk-export-btn').style.display = 'none';
+  document.getElementById('bulk-list').innerHTML = '';
+  document.getElementById('bulk-progress').style.display = 'block';
+
+  for (let i = 0; i < ips.length; i++) {
+    document.getElementById('bulk-progress-label').textContent = `Processing ${i + 1} / ${ips.length}…`;
+    document.getElementById('bulk-progress-bar').style.width = `${Math.round(((i+1)/ips.length)*100)}%`;
+    try {
+      const data = await fetchIP(ips[i]);
+      bulkData.push({ ok: true, ip: ips[i], data });
+      saveHistory(data);
+    } catch(e) {
+      bulkData.push({ ok: false, ip: ips[i], error: e.message });
+    }
+    await new Promise(r => setTimeout(r, 300)); // Rate limit buffer
+  }
+
+  document.getElementById('bulk-progress').style.display = 'none';
+  renderBulkResults();
+  btn.disabled = false;
+}
+
+function renderBulkResults() {
+  const list = document.getElementById('bulk-list');
+  list.innerHTML = '';
+  bulkData.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'bulk-row';
+    if (row.ok) {
+      const d = row.data;
+      const isProxy = !!(d.org && /datacenter|hosting|cloud|amazon|google|microsoft|digitalocean|linode|vultr|ovh|hetzner/i.test(d.org));
+      const isVPN = !!(d.org && /vpn|virtual private|nord|express|private internet|surfshark|proton/i.test(d.org));
+      div.innerHTML = `
+        <div class="ip">${d.ip}</div>
+        <div class="loc">${[d.city, d.country_code].filter(Boolean).join(', ') || '—'}</div>
+        <div class="isp-col" title="${d.org || ''}">${d.org || '—'}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${isVPN ? '<span class="badge badge-warn" style="font-size:10px;">VPN</span>' : ''}
+          ${isProxy ? '<span class="badge badge-muted" style="font-size:10px;">DC</span>' : ''}
+          ${!isVPN && !isProxy ? '<span class="badge badge-green" style="font-size:10px;">Clean</span>' : ''}
+        </div>`;
+    } else {
+      div.innerHTML = `<div class="ip" style="color:var(--danger);">${row.ip}</div><div class="loc" style="color:var(--muted);">Lookup failed</div><div></div><div></div>`;
+    }
+    list.appendChild(div);
+  });
+  document.getElementById('bulk-results-area').style.display = 'block';
+  document.getElementById('bulk-export-btn').style.display = 'flex';
+}
+
+function exportCSV() {
+  const rows = [['IP','Country','City','Region','Timezone','ISP','ASN','Latitude','Longitude','VPN_Likely','Proxy_Likely']];
+  bulkData.forEach(r => {
+    if (r.ok) {
+      const d = r.data;
+      const vp = !!(d.org && /vpn|virtual private|nord|express|private internet/i.test(d.org));
+      const pr = !!(d.org && /datacenter|hosting|cloud|amazon|google|microsoft|digitalocean/i.test(d.org));
+      rows.push([d.ip, d.country_name, d.city, d.region, d.timezone, d.org, d.asn, d.latitude, d.longitude, vp, pr]);
+    } else {
+      rows.push([r.ip, 'ERROR', '', '', '', '', '', '', '', '', '']);
+    }
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v || '').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'ip-lookup-results.csv';
+  a.click();
+}
+
+// History
+function saveHistory(data) {
+  const entry = {
+    ip: data.ip,
+    country: data.country_name,
+    city: data.city,
+    org: data.org,
+    ts: Date.now(),
+    data
+  };
+  history = [entry, ...history.filter(h => h.ip !== data.ip)].slice(0, 50);
+  localStorage.setItem('ip-tracker-history', JSON.stringify(history));
+  updateHistoryCount();
+}
+
+function updateHistoryCount() {
+  document.getElementById('history-count').textContent = history.length;
+}
+
+function renderHistory() {
+  const wrap = document.getElementById('history-list-wrap');
+  if (!history.length) {
+    wrap.innerHTML = '<div class="history-empty">No lookups yet. Start tracking some IPs!</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="history-list">' + history.map((h, i) => `
+    <div class="history-item" onclick="loadFromHistory(${i})">
+      <div class="history-ip">${h.ip}</div>
+      <div class="history-meta">${[h.city, h.country].filter(Boolean).join(', ')} · ${h.org || '—'}</div>
+      <div class="history-time">${timeAgo(h.ts)}</div>
+      <button class="history-del" onclick="deleteHistory(event,${i})" title="Remove">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join('') + '</div>';
+}
+
+function loadFromHistory(i) {
+  const entry = history[i];
+  if (!entry) return;
+  switchTab('single');
+  document.querySelectorAll('.tab')[0].classList.add('active');
+  document.querySelectorAll('.tab')[2].classList.remove('active');
+  document.getElementById('ip-input').value = entry.ip;
+  lastData = entry.data;
+  populateSingle(entry.data);
+  document.getElementById('single-result').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteHistory(e, i) {
+  e.stopPropagation();
+  history.splice(i, 1);
+  localStorage.setItem('ip-tracker-history', JSON.stringify(history));
+  updateHistoryCount();
+  renderHistory();
+}
+
+function clearHistory() {
+  history = [];
+  localStorage.removeItem('ip-tracker-history');
+  updateHistoryCount();
+  renderHistory();
+}
+
+function timeAgo(ts) {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return `${Math.floor(sec/60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec/3600)}h ago`;
+  return `${Math.floor(sec/86400)}d ago`;
+}
+
+updateHistoryCount();
+</script>
+</body>
+</html>
